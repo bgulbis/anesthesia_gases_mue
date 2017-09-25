@@ -14,7 +14,7 @@ pts_mbo <- read_data(dir_raw, "patients", FALSE) %>%
     as.patients() %>%
     filter(age >= 18)
 
-pts_id <- concat_encounters(pts_mbo$millennium.id, 1000)
+pts_id <- concat_encounters(pts_mbo$millennium.id, 500)
 
 # Run MBO query:
 #   * Clinical Events - No Order Id - Prompt
