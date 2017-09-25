@@ -34,3 +34,18 @@ x <- count(gases, event)
 #       Anes, Inspired Sevoflurne - Anes, Expired Desflurane - Anes, Expired
 #       Isoflurane - Anes, Expired Sevoflurne - Anes, N2O - Anes, Fi N2O - Anes,
 #       Expired N2O - Anes
+#   * Demographics
+#   * Diagnosis - ICD-9/10-CM
+#   * Labs - Renal
+#   * Measures
+
+# run EDW query:
+#   * Identifiers - by Millennium Encounter ID
+
+pts_edw <- read_data(dir_raw, "identifiers") %>%
+    as.id()
+
+id_edw <- concat_encounters(pts_edw$pie.id, 1000)
+
+# run EDW query:
+#   * Surgeries
