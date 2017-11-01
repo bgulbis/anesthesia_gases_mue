@@ -6,7 +6,6 @@ output:
   tufte::tufte_handout:
     citation_package: natbib
     latex_engine: xelatex
-    keep_tex: true
 link-citations: yes
 ---
 

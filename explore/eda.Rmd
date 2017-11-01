@@ -1,0 +1,105 @@
+---
+title: "Anesthesia Gas MUE"
+author: "Brian Gulbis"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(forcats)
+library(themebg)
+library(kableExtra)
+
+dirr::get_rds("../data/tidy")
+```
+
+```{r, fig.cap="Type of gas used by category "}
+data_gas %>%
+    left_join(data_surgeries, by = c("millennium.id", "surg.start.datetime")) %>%
+    filter(!is.na(surg.type)) %>%
+    mutate_at("surg.type", factor, levels = data_surgery_types$surg.type) %>%
+    mutate_at("surg.type", fct_rev) %>%
+    ggplot(aes(x = surg.type, fill = gas)) +
+    geom_bar() +
+    xlab("Surgery Category") +
+    ylab("Patients") +
+    scale_fill_brewer("Gas Used", palette = "Dark2") +
+    coord_flip() +
+    theme_bg(yticks = FALSE) +
+    theme(legend.title = element_text(color = "grey35"))
+```
+
+```{r, fig.cap="Distribution of surgery duration by type of gas used"}
+data_gas %>%
+    left_join(data_surgeries, by = c("millennium.id", "surg.start.datetime")) %>%
+    filter(!is.na(surgery_duration)) %>%
+    mutate_at("surgery_duration", as.numeric) %>%
+    ggplot(aes(x = gas, y = surgery_duration)) +
+    geom_boxplot() +
+    xlab("Gas Used") +
+    ylab("Surgery Duration (hours)") +
+    theme_bg()
+```
+
+```{r}
+totals_gas <- data_gas %>%
+    ungroup() %>%
+    count(gas) %>%
+    rename(total = n)
+
+data_gas %>%
+    left_join(data_patients, by = "millennium.id") %>%
+    group_by(gas) %>%
+    summarize_at(c("obesity", "osa"), sum, na.rm = TRUE) %>%
+    left_join(totals_gas, by = "gas") %>%
+    mutate_at(c("obesity", "osa"), funs(. / total * 100))
+```
+
+Turn down flow rate after induction
+How many have sevo flow rate < 2
+Plot time course of flow rates
+Duration of case by gas
+
+```{r}
+data_gas_intervals %>%
+    filter(flow_avg > 0) %>%
+    ggplot(aes(x = time_group, y = flow_avg, color = gas)) +
+    geom_smooth()
+```
+
+```{r}
+gas_real_cost %>%
+    ggplot(aes(x = run_time, y = flow, color = gas)) +
+    geom_smooth()
+```
+
+```{r}
+gas_real_cost %>%
+    ggplot(aes(x = run_time, y = fresh_gas, color = gas)) +
+    geom_smooth()
+```
+
+```{r}
+data_surgeries %>%
+    left_join(data_gas, by = c("millennium.id", "surg.start.datetime")) %>%
+    count(surgery, gas, sort = TRUE)
+```
+
+```{r}
+data_patients %>%
+    summarize_at(c("obesity", "osa"), sum, na.rm = TRUE)
+```
+
+```{r}
+data_surgeries %>%
+    left_join(data_gas, by = c("millennium.id", "surg.start.datetime")) %>%
+    filter(!is.na(gas)) %>%
+    ggplot(aes(x = gas, y = surgery_duration)) +
+    geom_boxplot()
+```
+
