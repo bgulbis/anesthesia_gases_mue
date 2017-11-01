@@ -85,7 +85,7 @@ gas_real_cost <- gas_flow %>%
            cost_ml = case_when(gas == "desflurane" ~ 0.62,
                                gas == "sevoflurane" ~ 0.10,
                                gas == "isoflurane" ~ 0.32),
-           cost = (flow * fresh_gas * mol_wt * duration * cost_ml) / (2412 * density))
+           cost = (flow * fresh_gas * mol_wt * as.numeric(duration) * cost_ml) / (2412 * density))
 
 gas_real_cost_total <- gas_real_cost %>%
     group_by(millennium.id, surg.start.datetime, gas) %>%
@@ -173,7 +173,7 @@ data_patients <- demographics %>%
 
 data_surgeries <- surg_start %>%
     left_join(gas_num, by = c("millennium.id", "surg.start.datetime")) %>%
-    select(millennium.id, surgery, surgery_duration, num_gases = n) %>%
+    select(millennium.id, surg.type, surgery, surgery_duration, num_gases = n, surg.start.datetime) %>%
     mutate_at("num_gases", funs(coalesce(., 0L))) %>%
     semi_join(data_patients, by = "millennium.id")
 
@@ -182,16 +182,20 @@ data_gas <- gas_real_cost_total %>%
     select(-flow_auc, -fresh_auc, -total_duration) %>%
     semi_join(data_patients, by = "millennium.id")
 
+data_gas_realtime <- gas_real_cost
+
 data_gas_intervals <- gas_auc_group %>%
     select(-flow_auc, -fresh_auc, -total_duration) %>%
     semi_join(data_patients, by = "millennium.id")
 
 data_surgery_types <- surg_start %>%
     semi_join(data_patients, by = "millennium.id") %>%
-    count(surgery, sort = TRUE)
+    count(surg.type, sort = TRUE)
 
-write_csv(data_patients, "data/external/data_patients.csv")
-write_csv(data_surgeries, "data/external/data_surgeries.csv")
-write_csv(data_gas, "data/external/data_gas.csv")
-write_csv(data_gas_intervals, "data/external/data_gas_intervals.csv")
-write_csv(data_surgery_types, "data/external/data_surgery_types.csv")
+# write_csv(data_patients, "data/external/data_patients.csv")
+# write_csv(data_surgeries, "data/external/data_surgeries.csv")
+# write_csv(data_gas, "data/external/data_gas.csv")
+# write_csv(data_gas_intervals, "data/external/data_gas_intervals.csv")
+# write_csv(data_surgery_types, "data/external/data_surgery_types.csv")
+
+dirr::save_rds("data/tidy", "data_")

@@ -51,5 +51,5 @@ id_edw <- concat_encounters(pts_edw$pie.id, 1000)
 
 # x <- read_data(dir_raw, "events", FALSE)
 #
-# y <- read_data(dir_raw, "surgeries", FALSE) %>%
+# y <- read_data(dir_raw, "surgeries") %>%
 #     distinct()
