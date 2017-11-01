@@ -1,0 +1,171 @@
+---
+title: "Anesthesia Gas MUE"
+author: "Brian Gulbis"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output:
+  tufte::tufte_handout:
+    citation_package: natbib
+    latex_engine: xelatex
+    keep_tex: true
+link-citations: yes
+---
+
+```{r setup, include=FALSE}
+library(tufte)
+# invalidate cache when the tufte version changes
+knitr::opts_chunk$set(tidy = FALSE, cache.extra = packageVersion('tufte'), message = FALSE, warning = FALSE, echo = FALSE)
+options(htmltools.dir.version = FALSE, knitr.table.format = "latex")
+```
+
+```{r}
+library(tidyverse)
+library(forcats)
+library(stringr)
+library(themebg)
+library(kableExtra)
+
+x <- dirr::get_rds("../data/tidy")
+```
+
+```{r, fig.cap="Type of gas used by category "}
+data_gas %>%
+    left_join(data_surgeries, by = c("millennium.id", "surg.start.datetime")) %>%
+    filter(!is.na(surg.type)) %>%
+    mutate_at("surg.type", factor, levels = data_surgery_types$surg.type) %>%
+    mutate_at("surg.type", fct_rev) %>%
+    ggplot(aes(x = surg.type, fill = gas)) +
+    geom_bar() +
+    xlab("Surgery Category") +
+    ylab("Patients") +
+    scale_fill_brewer("Gas Used", palette = "Dark2") +
+    coord_flip() +
+    theme_bg(yticks = FALSE, base_family = "serif") +
+    theme(legend.title = element_text(color = "grey35"))
+```
+
+```{r, fig.cap="Distribution of surgery duration by type of gas used. Note, outliers above 12 hours are not displayed."}
+data_gas %>%
+    left_join(data_surgeries, by = c("millennium.id", "surg.start.datetime")) %>%
+    filter(!is.na(surgery_duration)) %>%
+    mutate_at("surgery_duration", as.numeric) %>%
+    ggplot(aes(x = gas, y = surgery_duration)) +
+    geom_boxplot() +
+    xlab("Gas Used") +
+    ylab("Surgery Duration (hours)") +
+    coord_cartesian(ylim = c(0, 12)) +
+    theme_bg(base_family = "serif")
+```
+
+```{r, fig.cap="Distribution of cost by type of gas used"}
+data_gas %>%
+    # left_join(data_surgeries, by = c("millennium.id", "surg.start.datetime")) %>%
+    ggplot(aes(x = gas, y = cost)) +
+    geom_boxplot() +
+    xlab("Gas Used") +
+    ylab("Cost") +
+    # coord_cartesian(ylim = c(0, 12)) +
+    theme_bg(base_family = "serif")
+```
+
+```{r, fig.cap="Distribution of cost by type of surgery. Note, outliers above 15 are not displayed."}
+cost_medians <- data_gas %>%
+    left_join(data_surgeries, by = c("millennium.id", "surg.start.datetime")) %>%
+    filter(!is.na(surg.type)) %>%
+    group_by(surg.type) %>%
+    summarize_at("cost", median, na.rm = TRUE) %>%
+    arrange(desc(cost))
+
+data_gas %>%
+    left_join(data_surgeries, by = c("millennium.id", "surg.start.datetime")) %>%
+    filter(!is.na(surg.type)) %>%
+    mutate_at("surg.type", factor, levels = cost_medians$surg.type) %>%
+    mutate_at("surg.type", fct_rev) %>%
+    ggplot(aes(x = surg.type, y = cost)) +
+    geom_boxplot() +
+    xlab("Surgery Type") +
+    ylab("Cost ($)") +
+    coord_flip(ylim = c(0, 15)) +
+    # coord_cartesian(ylim = c(0, 15)) +
+    theme_bg(base_family = "serif")
+```
+
+```{r, fig.cap="Relationship between cost for each gas and duration of surgery"}
+p_cost <- data_gas %>%
+    left_join(data_surgeries, by = c("millennium.id", "surg.start.datetime")) %>%
+    filter(!is.na(surgery_duration)) %>%
+    mutate_at("surgery_duration", as.numeric) %>%
+    ggplot(aes(x = surgery_duration, y = cost, color = gas)) +
+    geom_point(shape = 1) +
+    geom_smooth(se = FALSE, method = "lm") +
+    xlab("Surgery Duration (hours)") +
+    ylab("Total Gas Cost") +
+    scale_color_brewer("Gas Used", palette = "Dark2") +
+    theme_bg() +
+    theme(legend.title = element_text(color = "grey35"))
+
+p_cost
+```
+
+```{r, fig.cap="Relationship between cost for each gas and duration of surgery. The x- and y-axis have been narrowed to better visualize the majority of surgeries."}
+p_cost +
+    coord_cartesian(xlim = c(0, 7.5), ylim = c(0, 25))
+```
+
+```{r, fig.cap="Distribution of serum creatinine values by type of gas used. For reference, the grey horizontal line indicates a serum creatinine of 1.5 mg/dL. Note, outliers above 5 mg/dL are not displayed."}
+data_gas %>%
+    left_join(data_patients, by = "millennium.id") %>%
+    filter(!is.na(scr_prior_surg)) %>%
+    ggplot(aes(x = gas, y = scr_prior_surg)) +
+    geom_hline(yintercept = 1.5, color = "grey50") +
+    geom_boxplot() +
+    xlab("Gas Used") +
+    ylab("Serum creatinine (mg/dL)") +
+    coord_cartesian(ylim = c(0, 5)) +
+    theme_bg()
+```
+
+
+```{r}
+totals_gas <- data_gas %>%
+    ungroup() %>%
+    count(gas) %>%
+    rename(total = n)
+
+data_gas %>%
+    left_join(data_patients, by = "millennium.id") %>%
+    group_by(gas) %>%
+    summarize_at(c("obesity", "osa"), sum, na.rm = TRUE) %>%
+    left_join(totals_gas, by = "gas") %>%
+    mutate_at(c("obesity", "osa"), funs(. / total * 100)) %>%
+    select(-total) %>%
+    rename(Gas = gas, `Obesity (%)` = obesity, `OSA (%)` = osa) %>%
+    knitr::kable(digits = 0, booktabs = TRUE, caption = "Percent of patients with obesity or OSA by type of gas used") %>%
+    kable_styling(latex_options = "hold_position") 
+```
+
+```{r, fig.cap="Anesthesia gas flow rates over the duration of surgery"}
+data_gas_realtime %>%
+    mutate_at("run_time", as.numeric) %>%
+    mutate_at("run_time", funs(. / 60)) %>%
+    ggplot(aes(x = run_time, y = flow, color = gas)) +
+    geom_smooth() +
+    scale_x_continuous("Surgery Duration (hours)", breaks = seq(0, 20, 2)) +
+    scale_y_continuous("Gas Flow Rate", breaks = seq(0, 20, 2)) +
+    scale_color_brewer("Gas Used", palette = "Dark2") +
+    theme_bg() +
+    theme(legend.title = element_text(color = "grey35"))
+```
+
+```{r, fig.cap="Fresh gas flow rates over the duration of surgery by type of gas used"}
+data_gas_realtime %>%
+    mutate_at("run_time", as.numeric) %>%
+    mutate_at("run_time", funs(. / 60)) %>%
+    ggplot(aes(x = run_time, y = fresh_gas, color = gas)) +
+    geom_smooth() +
+    scale_x_continuous("Surgery Duration (hours)", breaks = seq(0, 20, 2)) +
+    scale_y_continuous("Fresh Flow Rate", breaks = seq(0, 20, 2)) +
+    scale_color_brewer("Gas Used", palette = "Dark2") +
+    theme_bg() +
+    theme(legend.title = element_text(color = "grey35"))
+```
+
