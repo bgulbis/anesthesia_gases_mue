@@ -192,10 +192,15 @@ data_surgery_types <- surg_start %>%
     semi_join(data_patients, by = "millennium.id") %>%
     count(surg.type, sort = TRUE)
 
-# write_csv(data_patients, "data/external/data_patients.csv")
-# write_csv(data_surgeries, "data/external/data_surgeries.csv")
-# write_csv(data_gas, "data/external/data_gas.csv")
-# write_csv(data_gas_intervals, "data/external/data_gas_intervals.csv")
-# write_csv(data_surgery_types, "data/external/data_surgery_types.csv")
+write.csv(data_patients, "data/external/data_patients.csv", row.names = FALSE)
+write.csv(data_surgeries, "data/external/data_surgeries.csv", row.names = FALSE)
+write.csv(data_gas, "data/external/data_gas.csv", row.names = FALSE)
+write.csv(data_gas_intervals, "data/external/data_gas_intervals.csv", row.names = FALSE)
+write.csv(data_surgery_types, "data/external/data_surgery_types.csv", row.names = FALSE)
+write.csv(data_gas_realtime, "data/external/data_gas_realtime.csv", row.names = FALSE)
+
+gas_files <- list.files("data/external", pattern = "csv$", full.names = TRUE)
+
+zip(paste0("data/external/mue_anes_gas_data.zip"), gas_files, flags = "-j")
 
 dirr::save_rds("data/tidy", "data_")
