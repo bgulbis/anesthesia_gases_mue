@@ -52,10 +52,10 @@ data_gas %>%
     xlab("Gas Used") +
     ylab("Surgery Duration (hours)") +
     coord_cartesian(ylim = c(0, 12)) +
-    theme_bg(base_family = "serif")
+    theme_bg(base_family = "serif", xticks = FALSE)
 ```
 
-```{r, fig.cap="Distribution of cost by type of gas used"}
+```{r, fig.cap="Distribution of cost by type of gas used", eval=FALSE}
 data_gas %>%
     # left_join(data_surgeries, by = c("millennium.id", "surg.start.datetime")) %>%
     ggplot(aes(x = gas, y = cost)) +
@@ -64,6 +64,19 @@ data_gas %>%
     ylab("Cost") +
     # coord_cartesian(ylim = c(0, 12)) +
     theme_bg(base_family = "serif")
+```
+
+```{r, fig.cap="Distribution of cost per hour by type of gas used"}
+data_gas_realtime %>%
+    mutate(hour = ceiling((as.numeric(run_time) + 5) / 60)) %>%
+    group_by(millennium.id, surg.start.datetime, gas, hour) %>%
+    summarize_at("cost", sum, na.rm = TRUE) %>%
+    ggplot(aes(x = gas, y = cost)) +
+    geom_boxplot() +
+    xlab("Gas Used") +
+    ylab("Cost per Hour") +
+    # coord_cartesian(ylim = c(0, 12)) +
+    theme_bg(base_family = "serif", xticks = FALSE)
 ```
 
 ```{r, fig.cap="Distribution of cost by type of surgery. Note, outliers above 15 are not displayed."}
@@ -85,7 +98,7 @@ data_gas %>%
     ylab("Cost ($)") +
     coord_flip(ylim = c(0, 15)) +
     # coord_cartesian(ylim = c(0, 15)) +
-    theme_bg(base_family = "serif")
+    theme_bg(base_family = "serif", yticks = FALSE)
 ```
 
 ```{r, fig.cap="Relationship between cost for each gas and duration of surgery"}
@@ -99,7 +112,7 @@ p_cost <- data_gas %>%
     xlab("Surgery Duration (hours)") +
     ylab("Total Gas Cost") +
     scale_color_brewer("Gas Used", palette = "Dark2") +
-    theme_bg() +
+    theme_bg(base_family = "serif") +
     theme(legend.title = element_text(color = "grey35"))
 
 p_cost
@@ -120,7 +133,7 @@ data_gas %>%
     xlab("Gas Used") +
     ylab("Serum creatinine (mg/dL)") +
     coord_cartesian(ylim = c(0, 5)) +
-    theme_bg()
+    theme_bg(base_family = "serif", xticks = FALSE)
 ```
 
 
@@ -142,16 +155,30 @@ data_gas %>%
     kable_styling(latex_options = "hold_position") 
 ```
 
-```{r, fig.cap="Anesthesia gas flow rates over the duration of surgery"}
+```{r, fig.cap="Anesthesia gas concentrations over the duration of surgery"}
 data_gas_realtime %>%
     mutate_at("run_time", as.numeric) %>%
     mutate_at("run_time", funs(. / 60)) %>%
     ggplot(aes(x = run_time, y = flow, color = gas)) +
     geom_smooth() +
     scale_x_continuous("Surgery Duration (hours)", breaks = seq(0, 20, 2)) +
-    scale_y_continuous("Gas Flow Rate", breaks = seq(0, 20, 2)) +
+    scale_y_continuous("Gas Concentration (%)", breaks = seq(0, 20, 2)) +
     scale_color_brewer("Gas Used", palette = "Dark2") +
-    theme_bg() +
+    theme_bg(base_family = "serif") +
+    theme(legend.title = element_text(color = "grey35"))
+```
+
+```{r, fig.cap="Anesthesia gas concentrations over the first two hours of surgery"}
+data_gas_realtime %>%
+    mutate_at("run_time", as.numeric) %>%
+    mutate_at("run_time", funs(. / 60)) %>%
+    ggplot(aes(x = run_time, y = flow, color = gas)) +
+    geom_smooth() +
+    scale_x_continuous("Surgery Duration (hours)", breaks = seq(0, 20, 0.5)) +
+    scale_y_continuous("Gas Concentration (%)", breaks = seq(0, 20, 1)) +
+    scale_color_brewer("Gas Used", palette = "Dark2") +
+    coord_cartesian(xlim = c(0, 2), ylim = c(0, 6)) +
+    theme_bg(base_family = "serif") +
     theme(legend.title = element_text(color = "grey35"))
 ```
 
@@ -162,9 +189,22 @@ data_gas_realtime %>%
     ggplot(aes(x = run_time, y = fresh_gas, color = gas)) +
     geom_smooth() +
     scale_x_continuous("Surgery Duration (hours)", breaks = seq(0, 20, 2)) +
-    scale_y_continuous("Fresh Flow Rate", breaks = seq(0, 20, 2)) +
+    scale_y_continuous("Fresh Flow Rate", breaks = seq(-20, 20, 2)) +
     scale_color_brewer("Gas Used", palette = "Dark2") +
-    theme_bg() +
+    theme_bg(base_family = "serif") +
     theme(legend.title = element_text(color = "grey35"))
 ```
 
+```{r, fig.cap="Fresh gas flow rates over the first two hours of surgery by type of gas used"}
+data_gas_realtime %>%
+    mutate_at("run_time", as.numeric) %>%
+    mutate_at("run_time", funs(. / 60)) %>%
+    ggplot(aes(x = run_time, y = fresh_gas, color = gas)) +
+    geom_smooth() +
+    scale_x_continuous("Surgery Duration (hours)", breaks = seq(0, 20, 0.5)) +
+    scale_y_continuous("Fresh Flow Rate", breaks = seq(0, 20, 1)) +
+    scale_color_brewer("Gas Used", palette = "Dark2") +
+    coord_cartesian(xlim = c(0, 2), ylim = c(0, 8)) +
+    theme_bg(base_family = "serif") +
+    theme(legend.title = element_text(color = "grey35"))
+```
