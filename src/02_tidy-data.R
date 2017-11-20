@@ -1,6 +1,5 @@
 library(tidyverse)
 library(lubridate)
-library(stringr)
 library(edwr)
 library(MESS)
 
@@ -36,8 +35,9 @@ gas_flow <- events %>%
     distinct() %>%
     group_by(millennium.id, event.datetime) %>%
     spread(event, event.result) %>%
+    mutate_at(c("air", "n2o", "o2"), funs(if_else(. > 100, . / 1000, .))) %>%
+    mutate_at(c("air", "n2o", "o2"), funs(if_else(. > 20, . / 10, .))) %>%
     mutate(fresh_gas = sum(air, n2o, o2, na.rm = TRUE)) %>%
-    mutate_at("fresh_gas", funs(if_else(. > 100, . / 100, .))) %>%
     left_join(surgeries[c("millennium.id", "surg.start.datetime", "surg.stop.datetime")], by = "millennium.id") %>%
     filter(event.datetime >= surg.start.datetime,
            event.datetime <= surg.stop.datetime) %>%

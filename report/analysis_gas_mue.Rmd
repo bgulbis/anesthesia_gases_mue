@@ -18,8 +18,6 @@ options(htmltools.dir.version = FALSE, knitr.table.format = "latex")
 
 ```{r}
 library(tidyverse)
-library(forcats)
-library(stringr)
 library(themebg)
 library(kableExtra)
 
@@ -67,10 +65,13 @@ data_gas %>%
 ```
 
 ```{r, fig.cap="Distribution of cost per hour by type of gas used"}
-data_gas_realtime %>%
+df_cost <- data_gas_realtime %>%
     mutate(hour = ceiling((as.numeric(run_time) + 5) / 60)) %>%
     group_by(millennium.id, surg.start.datetime, gas, hour) %>%
-    summarize_at("cost", sum, na.rm = TRUE) %>%
+    summarize_at("cost", sum, na.rm = TRUE)
+
+df_cost %>%
+    filter(cost > 0) %>%
     ggplot(aes(x = gas, y = cost)) +
     geom_boxplot() +
     xlab("Gas Used") +
@@ -78,6 +79,19 @@ data_gas_realtime %>%
     # coord_cartesian(ylim = c(0, 12)) +
     theme_bg(base_family = "serif", xticks = FALSE)
 ```
+
+```{r, fig.cap="Distribution of cost per hour by type of gas used, excluding desflurane"}
+df_cost %>%
+    filter(cost > 0,
+           gas != "desflurane") %>%
+    ggplot(aes(x = gas, y = cost)) +
+    geom_boxplot() +
+    xlab("Gas Used") +
+    ylab("Cost per Hour") +
+    # coord_cartesian(ylim = c(0, 12)) +
+    theme_bg(base_family = "serif", xticks = FALSE)
+```
+
 
 ```{r, fig.cap="Distribution of cost by type of surgery. Note, outliers above 15 are not displayed."}
 cost_medians <- data_gas %>%
