@@ -113,3 +113,30 @@ data_gas %>%
     rename(Gas = gas, `Obesity (%)` = obesity, `OSA (%)` = osa) %>%
     knitr::kable(digits = 0, booktabs = TRUE, caption = "Percent of patients with obesity or OSA by type of gas used") 
 ```
+
+```{r}
+data_gas %>%
+    left_join(data_patients, by = "millennium.id") %>%
+    group_by(gas) %>%
+    summarize_at("age", funs(Mean = mean, 
+                                          St.Dev. = sd, 
+                                          Median = median,
+                                          `25th` = quantile(., 0.25),
+                                          `75th` = quantile(., 0.75))) %>%
+    rename(Gas = gas) %>%
+    knitr::kable(caption = "Age by type of gas used.", digits = 2, booktabs = TRUE)
+```
+
+```{r}
+data_gas %>%
+    left_join(data_patients, by = "millennium.id") %>%
+    ungroup() %>%
+    count(gas, gender) %>%
+    left_join(totals_gas, by = "gas") %>%
+    mutate_at("n", funs(. / total * 100)) %>%
+    select(-total) %>%
+    spread(gender, n) %>%
+    rename(Gas = gas) %>%
+    knitr::kable(digits = 0, booktabs = TRUE, caption = "Patient gender by type of gas used.") 
+```
+
