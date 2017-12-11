@@ -1,5 +1,7 @@
 library(tidyverse)
 library(themebg)
+library(devEMF)
+library(lazyeval)
 
 x <- dirr::get_rds("data/tidy")
 base <- "" #serif
@@ -17,7 +19,8 @@ fig1 <- data_gas %>%
     scale_fill_manual("Gas Used", values = c("#252525", "#636363", "#969696")) +
     coord_flip() +
     theme_bg(yticks = FALSE, base_family = base) +
-    theme(legend.title = element_text(color = "grey35"))
+    theme(legend.title = element_text(color = "grey35"),
+          axis.line = element_line(color = "grey35"))
 
 fig2 <- data_gas %>%
     left_join(data_surgeries, by = c("millennium.id", "surg.start.datetime")) %>%
@@ -28,7 +31,8 @@ fig2 <- data_gas %>%
     xlab("Gas Used") +
     ylab("Surgery Duration (hours)") +
     coord_cartesian(ylim = c(0, 12)) +
-    theme_bg(base_family = base, xticks = FALSE)
+    theme_bg(base_family = base, xticks = FALSE) +
+    theme(axis.line = element_line(color = "grey35"))
 
 df_cost <- data_gas_realtime %>%
     mutate(hour = ceiling((as.numeric(run_time) + 5) / 60)) %>%
@@ -41,7 +45,8 @@ fig3 <- df_cost %>%
     geom_boxplot() +
     xlab("Gas Used") +
     ylab("Cost per Hour") +
-    theme_bg(base_family = base, xticks = FALSE)
+    theme_bg(base_family = base, xticks = FALSE) +
+    theme(axis.line = element_line(color = "grey35"))
 
 fig4 <- df_cost %>%
     filter(cost > 0,
@@ -50,7 +55,8 @@ fig4 <- df_cost %>%
     geom_boxplot() +
     xlab("Gas Used") +
     ylab("Cost per Hour") +
-    theme_bg(base_family = base, xticks = FALSE)
+    theme_bg(base_family = base, xticks = FALSE) +
+    theme(axis.line = element_line(color = "grey35"))
 
 cost_medians <- data_gas %>%
     left_join(data_surgeries, by = c("millennium.id", "surg.start.datetime")) %>%
@@ -69,7 +75,8 @@ fig5 <- data_gas %>%
     xlab("Surgery Type") +
     ylab("Cost ($)") +
     coord_flip(ylim = c(0, 15)) +
-    theme_bg(base_family = base, yticks = FALSE)
+    theme_bg(base_family = base, yticks = FALSE) +
+    theme(axis.line = element_line(color = "grey35"))
 
 fig6 <- data_gas %>%
     left_join(data_surgeries, by = c("millennium.id", "surg.start.datetime")) %>%
@@ -84,7 +91,8 @@ fig6 <- data_gas %>%
     scale_shape_manual("Gas Used", values = c(0, 1, 2)) +
     # scale_color_manual("Gas Used", values = c("#252525", "#636363", "#969696")) +
     theme_bg(base_family = base) +
-    theme(legend.title = element_text(color = "grey35"))
+    theme(legend.title = element_text(color = "grey35"),
+          axis.line = element_line(color = "grey35"))
 
 fig7 <- fig6 +
     coord_cartesian(xlim = c(0, 7.5), ylim = c(0, 25))
@@ -98,7 +106,8 @@ fig8 <- data_gas %>%
     xlab("Gas Used") +
     ylab("Serum creatinine (mg/dL)") +
     coord_cartesian(ylim = c(0, 5)) +
-    theme_bg(base_family = base, xticks = FALSE)
+    theme_bg(base_family = base, xticks = FALSE) +
+    theme(axis.line = element_line(color = "grey35"))
 
 fig9 <- data_gas_realtime %>%
     mutate_at("run_time", as.numeric) %>%
@@ -109,7 +118,8 @@ fig9 <- data_gas_realtime %>%
     scale_y_continuous("Gas Concentration (%)", breaks = seq(0, 20, 2)) +
     scale_linetype("Gas Used") +
     theme_bg(base_family = base) +
-    theme(legend.title = element_text(color = "grey35"))
+    theme(legend.title = element_text(color = "grey35"),
+          axis.line = element_line(color = "grey35"))
 
 fig10 <- data_gas_realtime %>%
     mutate_at("run_time", as.numeric) %>%
@@ -121,7 +131,8 @@ fig10 <- data_gas_realtime %>%
     scale_linetype("Gas Used") +
     coord_cartesian(xlim = c(0, 2), ylim = c(0, 6)) +
     theme_bg(base_family = base) +
-    theme(legend.title = element_text(color = "grey35"))
+    theme(legend.title = element_text(color = "grey35"),
+          axis.line = element_line(color = "grey35"))
 
 fig11 <- data_gas_realtime %>%
     mutate_at("run_time", as.numeric) %>%
@@ -129,10 +140,11 @@ fig11 <- data_gas_realtime %>%
     ggplot(aes(x = run_time, y = fresh_gas, linetype = gas)) +
     geom_smooth(color = "black") +
     scale_x_continuous("Surgery Duration (hours)", breaks = seq(0, 20, 2)) +
-    scale_y_continuous("Fresh Flow Rate", breaks = seq(-20, 20, 2)) +
+    scale_y_continuous("Fresh Flow Rate", breaks = seq(-20, 20, 0.5)) +
     scale_linetype("Gas Used") +
     theme_bg(base_family = base) +
-    theme(legend.title = element_text(color = "grey35"))
+    theme(legend.title = element_text(color = "grey35"),
+          axis.line = element_line(color = "grey35"))
 
 fig12 <- data_gas_realtime %>%
     mutate_at("run_time", as.numeric) %>%
@@ -140,22 +152,20 @@ fig12 <- data_gas_realtime %>%
     ggplot(aes(x = run_time, y = fresh_gas, linetype = gas)) +
     geom_smooth(color = "black") +
     scale_x_continuous("Surgery Duration (hours)", breaks = seq(0, 20, 0.5)) +
-    scale_y_continuous("Fresh Flow Rate", breaks = seq(0, 20, 1)) +
+    scale_y_continuous("Fresh Flow Rate", breaks = seq(0, 20, 0.5)) +
     # scale_color_manual("Gas Used", values = c("#252525", "#636363", "#969696")) +
     scale_linetype("Gas Used") +
-    coord_cartesian(xlim = c(0, 2), ylim = c(0, 8)) +
+    coord_cartesian(xlim = c(0, 2), ylim = c(0, 4)) +
     theme_bg(base_family = base) +
-    theme(legend.title = element_text(color = "grey35"))
+    theme(legend.title = element_text(color = "grey35"),
+          axis.line = element_line(color = "grey35"))
 
-ggsave("figs/fig01.jpg", fig1, device = "jpeg", width = 6, height = 4, units = "in")
-ggsave("figs/fig02.jpg", fig2, device = "jpeg", width = 6, height = 4, units = "in")
-ggsave("figs/fig03.jpg", fig3, device = "jpeg", width = 6, height = 4, units = "in")
-ggsave("figs/fig04.jpg", fig4, device = "jpeg", width = 6, height = 4, units = "in")
-ggsave("figs/fig05.jpg", fig5, device = "jpeg", width = 6, height = 4, units = "in")
-ggsave("figs/fig06.jpg", fig6, device = "jpeg", width = 6, height = 4, units = "in")
-ggsave("figs/fig07.jpg", fig7, device = "jpeg", width = 6, height = 4, units = "in")
-ggsave("figs/fig08.jpg", fig8, device = "jpeg", width = 6, height = 4, units = "in")
-ggsave("figs/fig09.jpg", fig9, device = "jpeg", width = 6, height = 4, units = "in")
-ggsave("figs/fig10.jpg", fig10, device = "jpeg", width = 6, height = 4, units = "in")
-ggsave("figs/fig11.jpg", fig11, device = "jpeg", width = 6, height = 4, units = "in")
-ggsave("figs/fig12.jpg", fig12, device = "jpeg", width = 6, height = 4, units = "in")
+save_all <- function(x, w = 6, h = 4) {
+    nm <- sprintf("figs/fig_%02d.emf", x)
+    emf(nm, width = w, height = h)
+    y <- get(paste0("fig", x))
+    print(y)
+    dev.off()
+}
+
+map(1:12, save_all)
