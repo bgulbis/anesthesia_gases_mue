@@ -1,0 +1,115 @@
+---
+title: "Anesthesia Gas MUE Raw Values"
+author: "Brian Gulbis"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output:
+  tufte::tufte_handout:
+    citation_package: natbib
+    latex_engine: xelatex
+link-citations: yes
+---
+
+```{r setup, include=FALSE}
+library(tufte)
+# invalidate cache when the tufte version changes
+knitr::opts_chunk$set(tidy = FALSE, cache.extra = packageVersion('tufte'), message = FALSE, warning = FALSE, echo = FALSE)
+options(htmltools.dir.version = FALSE, knitr.table.format = "latex")
+```
+
+```{r}
+library(tidyverse)
+library(themebg)
+library(kableExtra)
+
+x <- dirr::get_rds("../data/tidy")
+```
+
+```{r}
+data_gas %>%
+    left_join(data_surgeries, by = c("millennium.id", "surg.start.datetime")) %>%
+    filter(!is.na(surg.type)) %>%
+    ungroup() %>%
+    count(surg.type, gas) %>%
+    spread(gas, n, fill = 0) %>%
+    arrange(desc(sevoflurane)) %>%
+    rename_all(str_to_title) %>%
+    rename(`Surgery Type` = Surg.type) %>%
+    knitr::kable(caption = "Count of gas used by type of surgery. Data for figure 1.", digits = 2, booktabs = TRUE)
+```
+
+```{r}
+data_gas %>%
+    left_join(data_surgeries, by = c("millennium.id", "surg.start.datetime")) %>%
+    filter(!is.na(surgery_duration)) %>%
+    mutate_at("surgery_duration", as.numeric) %>%
+    group_by(gas) %>%
+    summarize_at("surgery_duration", funs(Mean = mean, 
+                                          St.Dev. = sd, 
+                                          Median = median,
+                                          `25th` = quantile(., 0.25),
+                                          `75th` = quantile(., 0.75))) %>%
+    rename(Gas = gas) %>%
+    knitr::kable(caption = "Surgery duration by type of gas used. Data for figure 2.", digits = 2, booktabs = TRUE)
+```
+
+```{r}
+data_gas_realtime %>%
+    mutate(hour = ceiling((as.numeric(run_time) + 5) / 60)) %>%
+    group_by(millennium.id, surg.start.datetime, gas, hour) %>%
+    summarize_at("cost", sum, na.rm = TRUE) %>%
+    filter(cost > 0) %>%
+    group_by(gas) %>%
+    summarize_at("cost", funs(Mean = mean, 
+                                          St.Dev. = sd, 
+                                          Median = median,
+                                          `25th` = quantile(., 0.25),
+                                          `75th` = quantile(., 0.75))) %>%
+    rename(Gas = gas) %>%
+    knitr::kable(caption = "Cost per hour by type of gas used. Data for figures 3 and 4.", digits = 2, booktabs = TRUE)
+```
+
+```{r}
+data_gas %>%
+    left_join(data_surgeries, by = c("millennium.id", "surg.start.datetime")) %>%
+    filter(!is.na(surg.type)) %>%
+    group_by(surg.type) %>%
+    summarize_at("cost", funs(Mean = mean, 
+                                          St.Dev. = sd, 
+                                          Median = median,
+                                          `25th` = quantile(., 0.25),
+                                          `75th` = quantile(., 0.75))) %>%
+    rename(`Surgery Type` = surg.type) %>%
+    arrange(desc(Median)) %>%
+    knitr::kable(caption = "Cost by type of surgery. Data for figure 5.", digits = 2, booktabs = TRUE)
+```
+
+```{r}
+data_gas %>%
+    left_join(data_patients, by = "millennium.id") %>%
+    filter(!is.na(scr_prior_surg)) %>%
+    group_by(gas) %>%
+    summarize_at("scr_prior_surg", funs(Mean = mean, 
+                                          St.Dev. = sd, 
+                                          Median = median,
+                                          `25th` = quantile(., 0.25),
+                                          `75th` = quantile(., 0.75))) %>%
+    rename(Gas = gas) %>%
+    knitr::kable(caption = "Serum creatinine values by type of gas used. Data for figure 8.", digits = 2, booktabs = TRUE)
+```
+
+```{r}
+totals_gas <- data_gas %>%
+    ungroup() %>%
+    count(gas) %>%
+    rename(total = n)
+
+data_gas %>%
+    left_join(data_patients, by = "millennium.id") %>%
+    group_by(gas) %>%
+    summarize_at(c("obesity", "osa"), sum, na.rm = TRUE) %>%
+    left_join(totals_gas, by = "gas") %>%
+    mutate_at(c("obesity", "osa"), funs(. / total * 100)) %>%
+    select(-total) %>%
+    rename(Gas = gas, `Obesity (%)` = obesity, `OSA (%)` = osa) %>%
+    knitr::kable(digits = 0, booktabs = TRUE, caption = "Percent of patients with obesity or OSA by type of gas used") 
+```
